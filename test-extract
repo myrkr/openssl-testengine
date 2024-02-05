@@ -1,0 +1,16 @@
+#!/bin/bash
+
+export PATH=$HOME/git/openssl/apps:$PATH
+export LD_LIBRARY_PATH=$HOME/git/openssl:$LD_LIBRARY_PATH
+# Uncomment to check that the correct library is used
+# command -v openssl
+# ldd $(command -v openssl)
+# ldd libtestengine.so
+
+test -f libtestengine.so || ./build.sh
+
+echo Extracting without engine
+openssl cms -decrypt -in data/encryptedtext.der -inkey data/alice_key.pem -recip data/alice_cert.pem -inform DER -out /tmp/decryptedtext.txt
+
+echo Extracting with forwarding engine
+OPENSSL_CONF=testengine.conf openssl cms -decrypt -in data/encryptedtext.der -inkey data/alice_key.pem -recip data/alice_cert.pem -inform DER -out /tmp/decryptedtext.txt
