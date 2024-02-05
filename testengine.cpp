@@ -102,7 +102,7 @@ static int testengine_initialize_ec_pkey_meth(void)
 		return 0;
 	}
 
-	testengine_ec_pkey_method = EVP_PKEY_meth_new(EVP_PKEY_EC, EVP_PKEY_FLAG_AUTOARGLEN);
+	testengine_ec_pkey_method = EVP_PKEY_meth_new(EVP_PKEY_EC, 0);
 	if (testengine_ec_pkey_method == NULL)
 	{
 		DEBUG_STDOUT("\n --> testengine_initialize_ec_pkey_meth() KO\n");
