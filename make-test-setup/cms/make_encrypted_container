@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Create CA certificate
+
+mkdir -p CA/private
+mkdir CA/newcerts
+touch CA/index.txt
+touch CA/index.txt.attr
+
+openssl ecparam -out CA/private/cakey.pem -name brainpoolP320r1 -genkey
+sed -e "s,ALTNAME,ca,g" openssl.cnf > openssl_alt.cnf
+openssl req -config openssl_alt.cnf -new -key CA/private/cakey.pem -out CA/careq.pem \
+  -subj /commonName=ca/organizationName=example/countryName=de -batch
+openssl ca -config openssl_alt.cnf -name CA \
+  -create_serial -out CA/cacert.pem -days 1095 -batch \
+  -keyfile CA/private/cakey.pem -selfsign \
+  -extensions v3_ca \
+  -infiles CA/careq.pem
+
+
+# Create user certificate
+
+openssl ecparam -out alice_key.pem -name brainpoolP320r1 -genkey
+sed -e "s,ALTNAME,alice,g" openssl.cnf > openssl_alt.cnf
+openssl req -config openssl_alt.cnf -new -key alice_key.pem -out alice_req.pem -days 365 \
+  -subj /commonName=alice/organizationName=example/countryName=de -batch
+openssl ca -config openssl_alt.cnf -name CA -create_serial -batch \
+  -policy policy_anything -out alice_cert.pem -infiles alice_req.pem
+
+openssl x509 -in alice_cert.pem -outform DER -out alice_cert.der
+openssl ec -in alice_key.pem -out alice_key.der -outform DER
+
+
+# Encrypt plaintext with user certificate
+
+openssl cms -encrypt -in plaintext.txt -outform DER \
+  -out encryptedtext.der -recip alice_cert.pem \
+  -aes256 -binary
+
+
+# Decrypt ciphertext with private key
+
+openssl cms -decrypt -in encryptedtext.der -inkey alice_key.pem \
+  -recip alice_cert.pem -inform DER -out decryptedtext.txt
